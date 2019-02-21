@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <string.h>
 
@@ -23,7 +24,9 @@ int check_is_standard_link(struct dirent* file) {
 int check_is_directory_has_directories(DIR* subdir) {
 	// Цикл по всем файлам в директории subdir
 	while (struct dirent* subdir_file = readdir(subdir)) {
-		if (subdir_file->d_type == DT_DIR  && !check_is_standard_link(subdir_file)) {
+		struct stat s = {};
+		stat(subdir_file->d_name, &s);
+		if ((s.st_mode & S_IFDIR) && !check_is_standard_link(subdir_file)) {
 			return true;
 			break;
 		}
