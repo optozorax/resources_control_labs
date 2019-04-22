@@ -18,20 +18,45 @@ struct message_buf {
 	int prog;
 };
 
+
 void enter_semaphore() {
-	// ...
+	// get semaphore
+	static const key_t semkey = 777;		
+	const int semid = semget(semkey, 1, IPC_CREAT | 0666);
+	
+	// consider enter in critical zone
+							// sem_number, operate, flags
+	struct sembuf op_array = { sembuf({0, -1, 0}) };
+	semop(semid, &op_array, 1);
 }
 
 void leave_semaphore() {
-	// ...
+	// get semaphore
+	static const key_t semkey = 777;		
+	const int semid = semget(semkey, 1, IPC_CREAT | 0666);
+	
+	// consider enter in critical zone
+							// sem_number, operate, flags
+	struct sembuf op_array = { sembuf({0, 1, 0}) };
+	semop(semid, &op_array, 1);
 }
 
 int main() {
     const int prog_count = 5;
     const int max_progs = 10;
     
+	// create semaphore
+	const key_t semkey = 777;		
+	const int semid = semget(semkey, 1, IPC_CREAT | 0666);
+	if(semid == -1) ;// error
+
+	// semaphore init
+	const int sem_restrict = 3; // amount process in critical zone
+	semctl(semid, 0, SETVAL, sem_restrict);
+
 	vector<int> first_progs;
 	vector<int> second_progs;
+
 
 	key_t key = 2234;
 	int msqid;
@@ -79,12 +104,19 @@ int main() {
 				cout << "GET OLOLOL: " << rbuf.mtype << " " << rbuf.prog << endl;
 		}
 
+		// delete message queue
 		msgctl(msqid, IPC_RMID, &dsbuf);
+
+		// delete semaphore
+		semctl(semid, 0, IPC_RMID);
+
 		return 0;
 	}
 
 	if (iAmFirstSon) {
 		srand(5);
+
+		//for(int i = 0; i < 5; i++) {
 		while (true) {
 		    sleep(rand()%3 + 1);
 
@@ -102,6 +134,8 @@ int main() {
 
 	if (iAmSecondSon) {
 		srand(123);
+
+		//for(int i = 0; i < 5; i++) {
 		while (true) {
 		    sleep(rand()%3 + 1);
 
@@ -113,7 +147,6 @@ int main() {
 				exit(1);
 			} 
 				//printf("Message: \"%d\" Sent\n", buf.prog);
-
 		}
 	}
 }
